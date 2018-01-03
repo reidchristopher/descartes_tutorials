@@ -28,6 +28,49 @@ std::vector<descartes_core::TrajectoryPtPtr> makePath();
  */
 bool executeTrajectory(const trajectory_msgs::JointTrajectory& trajectory);
 
+std::vector<descartes_core::TrajectoryPtPtr> makePoints(const descartes_core::RobotModel& model,
+                                                        const std::vector<descartes_core::TrajectoryPtPtr>& res,
+                                                        const double range, const double disc, const double dt)
+{
+  std::vector<descartes_core::TrajectoryPtPtr> result;
+
+  for (const auto& p : res)
+  {
+    // get joint pose
+    std::vector<double> dummy, joints;
+    p->getNominalJointPose(dummy, model, joints);
+
+    // compute the actual tool pose
+    Eigen::Affine3d pose;
+    model.getFK(joints, pose);
+
+    descartes_trajectory::TolerancedFrame frame;
+
+    // make a new point with the given tolerances
+//    using descartes_trajectory;
+
+    Eigen::Vector3d rpy = pose.rotation().eulerAngles(0, 1, 2);
+    double rx = rpy(0);
+    double ry = rpy(1);
+    double rz = rpy(2);
+    double x = pose.translation()(0);
+    double y = pose.translation()(1);
+    double z = pose.translation()(2);
+
+    auto pos_tol = descartes_trajectory::ToleranceBase::zeroTolerance<descartes_trajectory::PositionTolerance>(x, y, z);
+    auto orient_tol = descartes_trajectory::ToleranceBase::createSymmetric<descartes_trajectory::OrientationTolerance>(rx, ry, rz, 0, 0, range);
+    descartes_trajectory::TolerancedFrame tol_frame(pose, pos_tol, orient_tol);
+
+    boost::shared_ptr<descartes_trajectory::CartTrajectoryPt> ptr
+        (new descartes_trajectory::CartTrajectoryPt(tol_frame, 0, disc,  descartes_core::TimingConstraint(dt)));
+    result.push_back(ptr);
+
+  }
+
+  return result;
+}
+
+
 int main(int argc, char** argv)
 {
   // Initialize ROS
@@ -67,7 +110,7 @@ int main(int argc, char** argv)
 
   // tool center point frame (name of link associated with tool). The robot's flange is typically "tool0" but yours
   // could be anything. We typically have our tool's positive Z-axis point outward from the grinder, welder, etc.
-  const std::string tcp_frame = "tool0";
+  const std::string tcp_frame = "tool1";
 
   // Before you can use a model, you must call initialize. This will load robot models and sanity check the model.
   if (!model->initialize(robot_description, group_name, world_frame, tcp_frame))
@@ -119,6 +162,40 @@ int main(int argc, char** argv)
     return -4;
   }
 
+  double range = M_PI + 0.1;
+  double disc = M_PI / 6.0;
+  double dt = 1;
+
+  for (int i = 0; i < 20; ++i)
+  {
+    ROS_INFO("%i of %i", i, 3);
+    descartes_planner::DensePlanner planner;
+
+    auto new_points = makePoints(*model, result, range, disc, dt);
+
+    if (!planner.initialize(model))
+    {
+      ROS_ERROR("Failed to initialize planner");
+      return -2;
+    }
+
+    if (!planner.planPath(new_points))
+    {
+      ROS_ERROR("Could not solve for a valid path");
+      return -3;
+    }
+
+//    std::vector<descartes_core::TrajectoryPtPtr> result;
+    if (!planner.getPath(result))
+    {
+      ROS_ERROR("Could not retrieve path");
+      return -4;
+    }
+
+    range /= 2.0;
+    disc /= 2.0;
+  }
+
   // 5. Translate the result into something that you can execute. In ROS land, this means that we turn the result into
   // a trajectory_msgs::JointTrajectory that's executed through a control_msgs::FollowJointTrajectoryAction. If you
   // have your own execution interface, you can get joint values out of the results in the same way.
@@ -167,6 +244,26 @@ descartes_core::TrajectoryPtPtr makeTolerancedCartesianPoint(const Eigen::Affine
   return TrajectoryPtPtr( new AxialSymmetricPt(pose, M_PI / 12.0, AxialSymmetricPt::Z_AXIS, TimingConstraint(dt)) );
 }
 
+bool createXYCircle(const Eigen::Vector3d &center, double radius, int num_points, EigenSTL::vector_Affine3d &poses)
+{
+  auto angle_disc = 2 * M_PI / num_points;
+  Eigen::AngleAxisd flip_z (M_PI, Eigen::Vector3d::UnitY());
+
+
+  for (int i = 0; i < num_points; ++i)
+  {
+    auto theta = i * angle_disc;
+    double dx = std::cos(theta) * radius;
+    double dy = std::sin(theta) * radius;
+    Eigen::Vector3d pos = center + Eigen::Vector3d(dx, dy, 0);
+
+    Eigen::Affine3d pose = Eigen::Affine3d::Identity() * flip_z;
+    pose.translation() = pos;
+    poses.push_back(pose);
+  }
+  return true;
+}
+
 std::vector<descartes_core::TrajectoryPtPtr> makePath()
 {
   // In Descartes, trajectories are composed of "points". Each point describes what joint positions of the robot can
@@ -182,26 +279,30 @@ std::vector<descartes_core::TrajectoryPtPtr> makePath()
   // First thing, let's generate a pattern with its origin at zero. We'll define another transform later that
   // can move it to somewere more convenient.
   const static double step_size = 0.01;
-  const static int num_steps = 20;
-  const static double time_between_points = 0.5;
+  const static int num_steps = 50;
+  const static double time_between_points = 1;
+
 
   EigenSTL::vector_Affine3d pattern_poses;
-  for (int i = -num_steps / 2; i < num_steps / 2; ++i)
-  {
-    // Create a pose and initialize it to identity
-    Eigen::Affine3d pose = Eigen::Affine3d::Identity();
-    // set the translation (we're moving along a line in Y)
-    pose.translation() = Eigen::Vector3d(0, i * step_size, 0);
-    // set the orientation. By default, the tool will be pointing up into the air when we usually want it to
-    // be pointing down into the ground.
-    pose *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()); // this flips the tool around so that Z is down
-    pattern_poses.push_back(pose);
-  }
+//  for (int i = -num_steps / 2; i < num_steps / 2; ++i)
+//  {
+//    // Create a pose and initialize it to identity
+//    Eigen::Affine3d pose = Eigen::Affine3d::Identity();
+//    // set the translation (we're moving along a line in Y)
+//    pose.translation() = Eigen::Vector3d(0, i * step_size, 0);
+//    // set the orientation. By default, the tool will be pointing up into the air when we usually want it to
+//    // be pointing down into the ground.
+//    pose *= Eigen::AngleAxisd(M_PI, Eigen::Vector3d::UnitX()); // this flips the tool around so that Z is down
+//    pattern_poses.push_back(pose);
+//  }
 
-  // Now lets translate these points to Descartes trajectory points
-  // The ABB2400 is pretty big, so let's move the path forward and up.
+//  // Now lets translate these points to Descartes trajectory points
+//  // The ABB2400 is pretty big, so let's move the path forward and up.
   Eigen::Affine3d pattern_origin = Eigen::Affine3d::Identity();
-  pattern_origin.translation() = Eigen::Vector3d(1.0, 0, 0.3);
+  pattern_origin.translation() = Eigen::Vector3d(1.1, 0, 0.3);
+
+  pattern_poses.clear();
+  createXYCircle(Eigen::Vector3d(0,0,0), 0.45, 30, pattern_poses);
 
   std::vector<descartes_core::TrajectoryPtPtr> result;
   for (const auto& pose : pattern_poses)

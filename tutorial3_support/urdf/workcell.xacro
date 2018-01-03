@@ -1,0 +1,62 @@
+<?xml version="1.0" ?>
+<robot name="myworkcell" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find abb_irb2400_support)/urdf/irb2400_12_155_macro.xacro" />
+
+
+  <link name="world"/>
+  <link name="tool1"/>
+  <link name="part">
+    <visual>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.5 0.5"/>
+      </geometry>
+      <xacro:material_abb_black />
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.25" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.25 0.5 0.5"/>
+      </geometry>
+      <xacro:material_abb_yellow />
+    </collision>
+  </link>
+
+  <xacro:abb_irb2400_12_155 prefix=""/>
+
+  <link name="positioner_base"/>
+  <link name="positioner_part"/>
+
+  <joint name="world_to_robot" type="fixed">
+    <parent link="world"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="robot_tool" type="fixed">
+    <parent link="tool0"/>
+    <child link="tool1"/>
+    <origin xyz="0 0 0.1" rpy="0 ${1.5708/2.0} 0"/>
+  </joint>
+
+  <joint name="robot_to_pos" type="fixed">
+    <parent link="base_link"/>
+    <child link="positioner_base"/>
+    <origin xyz="1.5 0 0.0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="positioner_axis" type="revolute">
+    <parent link="positioner_base"/>
+    <child link="positioner_part"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.1416" upper="3.1416" effort="0" velocity="${3.14159 / 10.0}"/>
+  </joint>
+
+  <joint name="pos_to_part" type="fixed">
+    <parent link="positioner_part"/>
+    <child link="part"/>
+    <origin xyz="0 0 0.0" rpy="0 0 0"/>
+  </joint>
+
+</robot>

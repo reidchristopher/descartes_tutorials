@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   trajectory_msgs
   tf
   tf_conversions
+  descartes_opw_model
 )
 
 catkin_package()
@@ -22,6 +23,7 @@ catkin_package()
 ###########
 
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -47,6 +49,16 @@ set_target_properties(${PROJECT_NAME}_tutorial2
   PROPERTIES OUTPUT_NAME tutorial2
   PREFIX "")
 
+# Tutorial 3 -
+add_executable(${PROJECT_NAME}_tutorial3 src/tutorial3.cpp src/positioner_point.cpp)
+
+target_link_libraries(${PROJECT_NAME}_tutorial3
+ ${catkin_LIBRARIES}
+)
+
+set_target_properties(${PROJECT_NAME}_tutorial3
+  PROPERTIES OUTPUT_NAME tutorial3
+  PREFIX "")
 
 
 #############
