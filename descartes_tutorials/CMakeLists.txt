@@ -16,7 +16,23 @@ find_package(catkin REQUIRED COMPONENTS
   descartes_opw_model
 )
 
-catkin_package()
+catkin_package(
+  INCLUDE_DIRS
+    include
+  LIBRARIES
+    positioner_point
+  CATKIN_DEPENDS
+    roslib
+    descartes_core
+    descartes_moveit
+    descartes_trajectory
+    descartes_planner
+    descartes_utilities
+    trajectory_msgs
+    tf
+    tf_conversions
+    descartes_opw_model
+)
 
 ###########
 ## Build ##
@@ -25,6 +41,14 @@ catkin_package()
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+)
+
+# Positioner point library
+add_library(positioner_point
+  src/positioner_point.cpp
+)
+target_link_libraries(positioner_point
+  ${catkin_LIBRARIES}
 )
 
 # Tutorial 1
