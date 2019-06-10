@@ -41,7 +41,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoints(const descartes_core::Ro
     p->getNominalJointPose(dummy, model, joints);
 
     // compute the actual tool pose
-    Eigen::Affine3d pose;
+    Eigen::Isometry3d pose;
     model.getFK(joints, pose);
 
     descartes_trajectory::TolerancedFrame frame;
@@ -229,7 +229,7 @@ int main(int argc, char** argv)
   return 0;
 }
 
-descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Affine3d& pose, double dt)
+descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Isometry3d& pose, double dt)
 {
   using namespace descartes_core;
   using namespace descartes_trajectory;
@@ -237,14 +237,14 @@ descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Affine3d& pose, 
   return TrajectoryPtPtr( new CartTrajectoryPt( TolerancedFrame(pose), TimingConstraint(dt)) );
 }
 
-descartes_core::TrajectoryPtPtr makeTolerancedCartesianPoint(const Eigen::Affine3d& pose, double dt)
+descartes_core::TrajectoryPtPtr makeTolerancedCartesianPoint(const Eigen::Isometry3d& pose, double dt)
 {
   using namespace descartes_core;
   using namespace descartes_trajectory;
   return TrajectoryPtPtr( new AxialSymmetricPt(pose, M_PI / 12.0, AxialSymmetricPt::Z_AXIS, TimingConstraint(dt)) );
 }
 
-bool createXYCircle(const Eigen::Vector3d &center, double radius, int num_points, EigenSTL::vector_Affine3d &poses)
+bool createXYCircle(const Eigen::Vector3d &center, double radius, int num_points, EigenSTL::vector_Isometry3d &poses)
 {
   auto angle_disc = 2 * M_PI / num_points;
   Eigen::AngleAxisd flip_z (M_PI, Eigen::Vector3d::UnitY());
@@ -257,7 +257,7 @@ bool createXYCircle(const Eigen::Vector3d &center, double radius, int num_points
     double dy = std::sin(theta) * radius;
     Eigen::Vector3d pos = center + Eigen::Vector3d(dx, dy, 0);
 
-    Eigen::Affine3d pose = Eigen::Affine3d::Identity() * flip_z;
+    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity() * flip_z;
     pose.translation() = pos;
     poses.push_back(pose);
   }
@@ -283,11 +283,11 @@ std::vector<descartes_core::TrajectoryPtPtr> makePath()
   const static double time_between_points = 1;
 
 
-  EigenSTL::vector_Affine3d pattern_poses;
+  EigenSTL::vector_Isometry3d pattern_poses;
 //  for (int i = -num_steps / 2; i < num_steps / 2; ++i)
 //  {
 //    // Create a pose and initialize it to identity
-//    Eigen::Affine3d pose = Eigen::Affine3d::Identity();
+//    Eigen::Isometry3d pose = Eigen::Isometry3d::Identity();
 //    // set the translation (we're moving along a line in Y)
 //    pose.translation() = Eigen::Vector3d(0, i * step_size, 0);
 //    // set the orientation. By default, the tool will be pointing up into the air when we usually want it to
@@ -298,7 +298,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePath()
 
 //  // Now lets translate these points to Descartes trajectory points
 //  // The ABB2400 is pretty big, so let's move the path forward and up.
-  Eigen::Affine3d pattern_origin = Eigen::Affine3d::Identity();
+  Eigen::Isometry3d pattern_origin = Eigen::Isometry3d::Identity();
   pattern_origin.translation() = Eigen::Vector3d(1.1, 0, 0.3);
 
   pattern_poses.clear();

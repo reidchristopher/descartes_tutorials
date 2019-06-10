@@ -1,7 +1,7 @@
 #include "descartes_tutorials/positioner_point.h"
 
-PositionerPoint::PositionerPoint(const Eigen::Affine3d &turn_table,
-                                 const Eigen::Affine3d &pt,
+PositionerPoint::PositionerPoint(const Eigen::Isometry3d &turn_table,
+                                 const Eigen::Isometry3d &pt,
                                  double turn_table_disc,
                                  double turn_table_sym_tol,
                                  double pt_disc,
@@ -17,8 +17,8 @@ PositionerPoint::PositionerPoint(const Eigen::Affine3d &turn_table,
 {
 }
 
-PositionerPoint::PositionerPoint(const Eigen::Affine3d &turn_table,
-                                 const Eigen::Affine3d &pt,
+PositionerPoint::PositionerPoint(const Eigen::Isometry3d &turn_table,
+                                 const Eigen::Isometry3d &pt,
                                  double turn_table_disc,
                                  double pt_disc,
                                  descartes_core::TimingConstraint timing)
@@ -32,17 +32,17 @@ PositionerPoint::PositionerPoint(const Eigen::Affine3d &turn_table,
 {
 }
 
-bool PositionerPoint::getClosestCartPose(const std::vector<double> &seed_state, const descartes_core::RobotModel &kinematics, Eigen::Affine3d &pose) const
+bool PositionerPoint::getClosestCartPose(const std::vector<double> &seed_state, const descartes_core::RobotModel &kinematics, Eigen::Isometry3d &pose) const
 {
 
 }
 
-bool PositionerPoint::getNominalCartPose(const std::vector<double> &seed_state, const descartes_core::RobotModel &kinematics, Eigen::Affine3d &pose) const
+bool PositionerPoint::getNominalCartPose(const std::vector<double> &seed_state, const descartes_core::RobotModel &kinematics, Eigen::Isometry3d &pose) const
 {
 
 }
 
-void PositionerPoint::getCartesianPoses(const descartes_core::RobotModel &kinematics, EigenSTL::vector_Affine3d &poses) const
+void PositionerPoint::getCartesianPoses(const descartes_core::RobotModel &kinematics, EigenSTL::vector_Isometry3d &poses) const
 {
 
 }
@@ -64,7 +64,7 @@ void PositionerPoint::getJointPoses(const descartes_core::RobotModel &model, std
   {
     for (double angle = -pt_sym_tol_; angle < pt_sym_tol_; angle += pt_disc_)
     {
-      Eigen::Affine3d pose = turn_table_ * Eigen::AngleAxisd(table, Eigen::Vector3d::UnitZ()) * pt_ * Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
+      Eigen::Isometry3d pose = turn_table_ * Eigen::AngleAxisd(table, Eigen::Vector3d::UnitZ()) * pt_ * Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
       model.getAllIK(pose, results);
       for (auto& s : results)
       {

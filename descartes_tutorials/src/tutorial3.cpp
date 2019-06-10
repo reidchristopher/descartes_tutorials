@@ -149,14 +149,14 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoses()
   listener.waitForTransform("base_link", "positioner_base", ros::Time(), ros::Duration(5.0));
   listener.lookupTransform("base_link", "positioner_base", ros::Time(), p);
 
-  Eigen::Affine3d base_pose;
+  Eigen::Isometry3d base_pose;
   tf::poseTFToEigen(p, base_pose);
 
   Eigen::Vector3d box_dims (0.25, 0.5, 0.5);
 
   for (double y = -0.25; y < 0.25; y += 0.02)
   {
-    Eigen::Affine3d i;
+    Eigen::Isometry3d i;
     i.setIdentity();
     i.translation() = Eigen::Vector3d(-0.25/2.0, y, 0.5);
 
@@ -168,7 +168,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoses()
 
   for (double x = -0.25/2.; x < 0.25/2.; x += 0.02)
   {
-    Eigen::Affine3d i;
+    Eigen::Isometry3d i;
     i.setIdentity();
     i.translation() = Eigen::Vector3d(x, 0.25, 0.5);
 
@@ -180,7 +180,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoses()
 
   for (double y =0.25; y > -0.25; y -= 0.02)
   {
-    Eigen::Affine3d i;
+    Eigen::Isometry3d i;
     i.setIdentity();
     i.translation() = Eigen::Vector3d(0.25/2, y, 0.5);
 
@@ -192,7 +192,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoses()
 
   for (double x = 0.25/2.; x > -0.25/2.; x -= 0.02)
   {
-    Eigen::Affine3d i;
+    Eigen::Isometry3d i;
     i.setIdentity();
     i.translation() = Eigen::Vector3d(x, -0.25, 0.5);
 
@@ -205,7 +205,7 @@ std::vector<descartes_core::TrajectoryPtPtr> makePoses()
   return out;
 }
 
-descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Affine3d& pose, double dt)
+descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Isometry3d& pose, double dt)
 {
   using namespace descartes_core;
   using namespace descartes_trajectory;
@@ -213,7 +213,7 @@ descartes_core::TrajectoryPtPtr makeCartesianPoint(const Eigen::Affine3d& pose, 
   return TrajectoryPtPtr( new CartTrajectoryPt( TolerancedFrame(pose), TimingConstraint(dt)) );
 }
 
-descartes_core::TrajectoryPtPtr makeTolerancedCartesianPoint(const Eigen::Affine3d& pose, double dt)
+descartes_core::TrajectoryPtPtr makeTolerancedCartesianPoint(const Eigen::Isometry3d& pose, double dt)
 {
   using namespace descartes_core;
   using namespace descartes_trajectory;
